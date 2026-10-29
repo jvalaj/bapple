@@ -28,8 +28,8 @@ const LANDSCAPE = { distance: 49.5, pitch: 1.5, yaw: 0 };
 const PORTRAIT = { distance: 64.5, pitch: 1.5, yaw: 0 };
 const VIEWPOINT_FALLOFF = 1.5;
 
-// Showcase: the phone is 1.1x the stage fit from the start, then turns slowly round the vertical axis
-const SHOWCASE_SCALE = 1.1;
+// Showcase: the phone fills the stage fit from the start, then turns slowly round the vertical axis
+const SHOWCASE_SCALE = 1;
 const TURN_SPEED = (Math.PI * 2) / 20; // one full turn every 20 seconds
 
 const easeInOutCubic = (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
