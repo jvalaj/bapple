@@ -2,183 +2,348 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liquid Glass UI - Apple-Inspired Component Library</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="color-scheme" content="light">
+    <meta name="description" content="Banana Store. The best way to buy the products you love. iPhone Duo available now.">
+    <title>Banana Store - Buy iPhone Duo, BanaBook and more</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- SF Pro is used on Apple devices; Inter is the closest match everywhere else -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="preload" href="assets/pro-mobile.webp" as="image" media="(max-width: 1023px)">
+    <link rel="preload" href="assets/pro.webp" as="image" media="(min-width: 1024px)">
+    <link rel="stylesheet" href="style.css?v=10">
+    <script src="liquid-glass.js?v=10" defer></script>
+    <script src="main.js?v=10" defer></script>
+    <script src="store.js?v=10" defer></script>
 </head>
-<body>
-    
-    <svg style="display: none">
-        <defs>
-            <filter id="liquid-glass-filter">
-                <!-- Darkness layer (shadows) -->
-                <feImage href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%230001' /%3E%3Crect width='100%25' height='100%25' fill='%23FFF' style='filter:blur(5px)' /%3E%3C/svg%3E" 
-                         result="darkness" />
-                
-                <!-- Lightness layer (highlights) -->
-                <feImage href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%23FFF1' style='filter:blur(15px)' /%3E%3C/svg%3E" 
-                         result="lightness" />
-                
-                <!-- Mask -->
-                <feImage href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%23000' /%3E%3C/svg%3E" 
-                         result="mask" />
-                
-                <!-- Chromatic aberration gradients -->
-                <feImage href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g1' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%23000'/%3E%3Cstop offset='100%25' stop-color='%2300F'/%3E%3C/linearGradient%3E%3ClinearGradient id='g2' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23000'/%3E%3Cstop offset='100%25' stop-color='%230F0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='%237F7F7F' /%3E%3Crect width='100%25' height='100%25' fill='%23000' /%3E%3Crect width='100%25' height='100%25' fill='url(%23g1)' style='mix-blend-mode: screen' /%3E%3Crect width='100%25' height='100%25' fill='url(%23g2)' style='mix-blend-mode: screen' /%3E%3Crect width='100%25' height='100%25' fill='%237F7F7FBB' style='filter:blur(5px)' /%3E%3C/svg%3E" 
-                         result="chromaticMap" />
-                
-                <!-- Pre-blur -->
-                <feGaussianBlur stdDeviation="0.7" in="SourceGraphic" result="preblur" />
-                
-                <!-- Red Channel Displacement -->
-                <feDisplacementMap in="preblur" in2="chromaticMap" scale="-148" 
-                                   xChannelSelector="B" yChannelSelector="G" result="dispR" />
-                <feColorMatrix in="dispR" type="matrix"
-                               values="1 0 0 0 0
-                                       0 0 0 0 0
-                                       0 0 0 0 0
-                                       0 0 0 1 0" result="redChannel" />
-                
-                <!-- Green Channel Displacement -->
-                <feDisplacementMap in="preblur" in2="chromaticMap" scale="-150" 
-                                   xChannelSelector="B" yChannelSelector="G" result="dispG" />
-                <feColorMatrix in="dispG" type="matrix"
-                               values="0 0 0 0 0
-                                       0 1 0 0 0
-                                       0 0 0 0 0
-                                       0 0 0 1 0" result="greenChannel" />
-                
-                <!-- Blue Channel Displacement -->
-                <feDisplacementMap in="preblur" in2="chromaticMap" scale="-152" 
-                                   xChannelSelector="B" yChannelSelector="G" result="dispB" />
-                <feColorMatrix in="dispB" type="matrix"
-                               values="0 0 0 0 0
-                                       0 0 0 0 0
-                                       0 0 1 0 0
-                                       0 0 0 1 0" result="blueChannel" />
-                
-                <!-- Combine RGB channels -->
-                <feBlend in="greenChannel" in2="blueChannel" mode="screen" result="gb" />
-                <feBlend in="gb" in2="redChannel" mode="screen" result="rgb" />
-                
-                <!-- Post-blur -->
-                <feGaussianBlur stdDeviation="0.0" in="rgb" result="postblur" />
-                
-                <!-- Add lightness -->
-                <feBlend in="postblur" in2="lightness" mode="screen" result="withLight" />
-                
-                <!-- Add darkness -->
-                <feBlend in="withLight" in2="darkness" mode="multiply" result="withDark" />
-                
-                <!-- Apply mask -->
-                <feComposite in="withDark" in2="mask" operator="in" result="final" />
-            </filter>
-        </defs>
-    </svg>
-   
+<body class="lg-loading">
 
-    <!-- Main Content -->
-    <main class="lg-container">
-        <!-- Component Showcase -->
-        <section class="lg-section">
-            <h2 class="lg-section-title">Components</h2>
-            
-            <!-- Buttons -->
-            <div class="lg-component-group">
-                <h3 class="lg-component-title">Buttons</h3>
-                <div class="lg-button-group">
-                    <button class="lg-button lg-button-primary">Primary Button</button>
-                    <button class="lg-button lg-button-secondary">Secondary Button</button>
-                </div>
+    <!-- Preloader: removed by main.js once the hero backdrop and fonts are in -->
+    <div class="lg-preloader" role="progressbar" aria-label="Loading" aria-busy="true">
+        <div class="lg-preloader-bar" aria-hidden="true"><span></span></div>
+    </div>
+
+    <!-- Global nav -->
+    <header class="bs-globalnav is-over-hero">
+        <span class="lg-glass bs-globalnav-glass" aria-hidden="true"></span>
+        <nav class="bs-globalnav-inner" aria-label="Global">
+            <a href="#top" class="bs-logo" aria-label="Apple">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg>
+            </a>
+            <ul class="bs-globalnav-links" id="bs-globalnav-links">
+                <li><a href="#store">Store</a></li>
+                <li><a href="#latest">iPhone</a></li>
+                <li><a href="#latest">BanaBook</a></li>
+                <li><a href="#latest">Peel Pad</a></li>
+                <li><a href="#latest">Watch</a></li>
+                <li><a href="#latest">Vision</a></li>
+                <li><a href="#latest">AirPeels</a></li>
+                <li><a href="#accessories">Accessories</a></li>
+                <li><a href="#help">Support</a></li>
+            </ul>
+            <div class="bs-globalnav-actions">
+                <button class="bs-icon-button" type="button" aria-label="Search" data-search>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/></svg>
+                </button>
+                <button class="bs-icon-button" type="button" aria-label="Bag, 0 items" data-bag-open>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
+                    <span class="bs-bag-count" data-bag-count hidden>0</span>
+                </button>
+                <button class="bs-icon-button bs-menu-button" type="button" aria-label="Menu" aria-expanded="false" aria-controls="bs-globalnav-links" data-menu-toggle>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h14M5 15h14"/></svg>
+                </button>
             </div>
+        </nav>
+    </header>
 
-         
-            <div class="lg-component-group">
-                <h3 class="lg-component-title">Cards</h3>
-      
-                    <div class="lg-card">
-                        <div class="lg-card-header">
-                            <h4 class="lg-card-title">Feature Card</h4>
-                        </div>
-                        <div class="lg-card-content">
-                            <p>Backdrop</p>
-                        </div>
-                        <div class="lg-card-footer">
-                            <button class="lg-button lg-button-sm lg-button-primary">Learn More</button>
-                        </div>
-                    </div>
-                </div>
+    <main id="top">
+
+        <!-- Landing: the iPhone Duo floats in 3D -->
+        <section class="bs-hero" aria-labelledby="hero-title">
+            <div class="bs-hero-copy">
+                <p class="bs-hero-eyebrow">New</p>
+                <h1 class="bs-hero-title" id="hero-title">iPhone Duo</h1>
             </div>
-
-
-
-      
-            <div class="lg-component-group">
-                <h3 class="lg-component-title">Alerts</h3>
-                <div class="lg-alert lg-alert-info">
-                    <svg class="lg-alert-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div class="lg-alert-content">
-                        <h4 class="lg-alert-title">Information</h4>
-                        <p class="lg-alert-description">This is an informational alert with the liquid glass effect.</p>
-                    </div>
-                </div>
-
+            <div class="bs-hero-stage">
+                <picture>
+                    <source media="(min-width: 1024px)" srcset="assets/jphone-open.webp" width="900" height="742">
+                    <img class="bs-hero-poster" src="assets/jphone-upright.webp" alt="" width="508" height="768" data-hero-poster>
+                </picture>
+                <iframe class="bs-hero-duo" src="duo/hero.html?v=10" title="iPhone Duo in 3D, drag to spin it" data-hero-duo></iframe>
             </div>
-
-          
-            <div class="lg-component-group">
-                <h3 class="lg-component-title">Modal & Toast</h3>
-                <div class="lg-button-group">
-                    <button class="lg-button lg-button-primary" onclick="LiquidGlass.modal.open('demo-modal')">
-                        Open Modal
-                    </button>
-                 
-                </div>
+            <div class="bs-hero-actions">
+                <button class="lg-glass lg-button lg-button-light" type="button" data-add data-name="iPhone Duo 256GB" data-price="1599">Buy</button>
+                <a class="lg-glass lg-button lg-button-dark" href="duo/index.html">Explore in 3D</a>
             </div>
-
-       
-            <div class="lg-component-group">
-                <h3 class="lg-component-title">Navigation</h3>
-                <nav class="lg-nav">
-                    <a href="#" class="lg-nav-item lg-nav-item-active">Home</a>
-                 
-                </nav>
-            </div>
-
-
-            
+            <p class="bs-hero-price">From $1,599 or $66.62/mo. for 24 mo.<sup>*</sup></p>
         </section>
 
-    
-       
+        <!-- Store header -->
+        <section class="bs-store-head" id="store">
+            <h2 class="bs-store-title">Store. <span>The best way to buy the products you love.</span></h2>
+            <div class="bs-store-help">
+                <p><a href="#help">Need shopping help? Ask a Specialist&nbsp;›</a></p>
+                <p><a href="#help">Visit a Banana Store near you&nbsp;›</a></p>
+            </div>
+        </section>
+
+        <!-- Product row -->
+        <nav class="bs-shelf bs-products" aria-label="Products">
+            <ul>
+                <li><a href="#latest"><span class="bs-product-icon">📱</span>iPhone</a></li>
+                <li><a href="#latest"><span class="bs-product-icon">💻</span>BanaBook</a></li>
+                <li><a href="#latest"><span class="bs-product-icon">📖</span>Peel Pad</a></li>
+                <li><a href="#latest"><span class="bs-product-icon">⌚</span>Ripe Watch</a></li>
+                <li><a href="#latest"><span class="bs-product-icon">🥽</span>Vision Peel</a></li>
+                <li><a href="#latest"><span class="bs-product-icon">🎧</span>AirPeels</a></li>
+                <li><a href="#latest"><span class="bs-product-icon">🏷️</span>PeelTag</a></li>
+                <li><a href="#latest"><span class="bs-product-icon">📺</span>Banana TV</a></li>
+                <li><a href="#accessories"><span class="bs-product-icon">🔌</span>Accessories</a></li>
+                <li><a href="#accessories"><span class="bs-product-icon">🎁</span>Gift Card</a></li>
+            </ul>
+        </nav>
+
+        <!-- The latest -->
+        <section class="bs-row" id="latest">
+            <h2 class="bs-row-title">The latest. <span>Take a look at what's new, right now.</span></h2>
+            <ul class="bs-bento">
+                <li class="bs-bento-duo">
+                    <article class="bs-card bs-card-dark">
+                        <div class="bs-card-copy">
+                            <p class="bs-card-eyebrow bs-new">New</p>
+                            <h3>iPhone Duo</h3>
+                            <p>Unfold the future.</p>
+                            <p class="bs-card-price">From $1,599 or $66.62/mo. for 24 mo.*</p>
+                        </div>
+                        <img src="assets/jphone-open.webp" alt="iPhone Duo, unfolded" width="900" height="742" loading="lazy">
+                        <button class="lg-glass bs-card-buy" type="button" data-add data-name="iPhone Duo 256GB" data-price="1599">Buy</button>
+                    </article>
+                </li>
+                <li class="bs-bento-book">
+                    <article class="bs-card bs-card-dark" style="--card-bg: linear-gradient(160deg, #1d1d1f, #3a3a3c)">
+                        <div class="bs-card-copy">
+                            <p class="bs-card-eyebrow">BanaBook Pro</p>
+                            <h3>The most powerful BanaBook yet.</h3>
+                            <p class="bs-card-price">From $1,999</p>
+                        </div>
+                        <span class="bs-card-emoji" aria-hidden="true">💻</span>
+                        <button class="lg-glass bs-card-buy" type="button" data-add data-name="BanaBook Pro" data-price="1999">Buy</button>
+                    </article>
+                </li>
+                <li class="bs-bento-vision">
+                    <article class="bs-card" style="--card-bg: linear-gradient(160deg, #eef3ff, #cfdcff)">
+                        <div class="bs-card-copy">
+                            <p class="bs-card-eyebrow">Banana Vision Pro</p>
+                            <h3>Welcome to spatial computing.</h3>
+                            <p class="bs-card-price">From $3,499</p>
+                        </div>
+                        <span class="bs-card-emoji" aria-hidden="true">🥽</span>
+                        <button class="lg-glass bs-card-buy" type="button" data-add data-name="Banana Vision Pro" data-price="3499">Buy</button>
+                    </article>
+                </li>
+                <li class="bs-bento-pods">
+                    <article class="bs-card" style="--card-bg: linear-gradient(160deg, #f5f5f7, #e8e8ed)">
+                        <div class="bs-card-copy">
+                            <p class="bs-card-eyebrow">AirPeels Pro 3</p>
+                            <h3>Active Noise Cancellation, reimagined.</h3>
+                            <p class="bs-card-price">$249</p>
+                        </div>
+                        <span class="bs-card-emoji" aria-hidden="true">🎧</span>
+                        <button class="lg-glass bs-card-buy" type="button" data-add data-name="AirPeels Pro 3" data-price="249">Buy</button>
+                    </article>
+                </li>
+                <li class="bs-bento-watch">
+                    <article class="bs-card bs-card-dark" style="--card-bg: linear-gradient(160deg, #3b2a12, #120c05)">
+                        <div class="bs-card-copy">
+                            <p class="bs-card-eyebrow">Ripe Watch Ultra 3</p>
+                            <h3>The most rugged and capable Ripe Watch.</h3>
+                            <p class="bs-card-price">From $799</p>
+                        </div>
+                        <span class="bs-card-emoji" aria-hidden="true">⌚</span>
+                        <button class="lg-glass bs-card-buy" type="button" data-add data-name="Ripe Watch Ultra 3" data-price="799">Buy</button>
+                    </article>
+                </li>
+            </ul>
+        </section>
+
+        <!-- Help is here -->
+        <section class="bs-row" id="help">
+            <h2 class="bs-row-title">Help is here. <span>Whenever and however you need it.</span></h2>
+            <div class="bs-shelf">
+                <ul>
+                    <li>
+                        <article class="bs-card bs-card-md">
+                            <p class="bs-card-eyebrow">Banana Specialist</p>
+                            <h3>Shop one on one with a Specialist. Online or in a store.</h3>
+                            <span class="bs-card-emoji bs-card-emoji-sm" aria-hidden="true">🧑‍💼</span>
+                        </article>
+                    </li>
+                    <li>
+                        <article class="bs-card bs-card-md">
+                            <p class="bs-card-eyebrow">Personal Setup</p>
+                            <h3>We'll set up your new device and move your data over.</h3>
+                            <span class="bs-card-emoji bs-card-emoji-sm" aria-hidden="true">✨</span>
+                        </article>
+                    </li>
+                    <li>
+                        <article class="bs-card bs-card-md">
+                            <p class="bs-card-eyebrow">Today at Banana</p>
+                            <h3>Join free sessions. Photography, music, coding and more.</h3>
+                            <span class="bs-card-emoji bs-card-emoji-sm" aria-hidden="true">🎓</span>
+                        </article>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- The Banana Store difference -->
+        <section class="bs-row">
+            <h2 class="bs-row-title">The Banana Store difference. <span>Even more reasons to shop with us.</span></h2>
+            <div class="bs-shelf">
+                <ul>
+                    <li>
+                        <article class="bs-card bs-card-sm">
+                            <span class="bs-card-icon" aria-hidden="true">💳</span>
+                            <h3>Pay monthly at 0% APR with Banana Card.<sup>*</sup></h3>
+                        </article>
+                    </li>
+                    <li>
+                        <article class="bs-card bs-card-sm">
+                            <span class="bs-card-icon" aria-hidden="true">🔁</span>
+                            <h3>Trade in your current device for credit.</h3>
+                        </article>
+                    </li>
+                    <li>
+                        <article class="bs-card bs-card-sm">
+                            <span class="bs-card-icon" aria-hidden="true">🚚</span>
+                            <h3>Free delivery. Or pick it up. Your call.</h3>
+                        </article>
+                    </li>
+                    <li>
+                        <article class="bs-card bs-card-sm">
+                            <span class="bs-card-icon" aria-hidden="true">✍️</span>
+                            <h3>Make it yours. Free engraving.</h3>
+                        </article>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Accessories -->
+        <section class="bs-row" id="accessories">
+            <h2 class="bs-row-title">Accessories. <span>Essentials that pair perfectly with your favorite devices.</span></h2>
+            <div class="bs-shelf">
+                <ul>
+                    <li>
+                        <article class="bs-card bs-card-product">
+                            <span class="bs-card-emoji" aria-hidden="true">🧽</span>
+                            <p class="bs-card-eyebrow bs-new">Bestseller</p>
+                            <h3>Polishing Cloth</h3>
+                            <p class="bs-card-price">$19.00</p>
+                            <button class="lg-glass bs-card-buy" type="button" data-add data-name="Polishing Cloth" data-price="19">Add to Bag</button>
+                        </article>
+                    </li>
+                    <li>
+                        <article class="bs-card bs-card-product">
+                            <span class="bs-card-emoji" aria-hidden="true">🛡️</span>
+                            <h3>iPhone Duo FineWoven Case with MagSafe</h3>
+                            <p class="bs-card-price">$59.00</p>
+                            <button class="lg-glass bs-card-buy" type="button" data-add data-name="FineWoven Case" data-price="59">Add to Bag</button>
+                        </article>
+                    </li>
+                    <li>
+                        <article class="bs-card bs-card-product">
+                            <span class="bs-card-emoji" aria-hidden="true">✏️</span>
+                            <h3>Banana Pencil Pro</h3>
+                            <p class="bs-card-price">$129.00</p>
+                            <button class="lg-glass bs-card-buy" type="button" data-add data-name="Banana Pencil Pro" data-price="129">Add to Bag</button>
+                        </article>
+                    </li>
+                    <li>
+                        <article class="bs-card bs-card-product">
+                            <span class="bs-card-emoji" aria-hidden="true">🔌</span>
+                            <h3>240W USB-C Charge Cable (2 m)</h3>
+                            <p class="bs-card-price">$29.00</p>
+                            <button class="lg-glass bs-card-buy" type="button" data-add data-name="240W USB-C Charge Cable" data-price="29">Add to Bag</button>
+                        </article>
+                    </li>
+                    <li>
+                        <article class="bs-card bs-card-product">
+                            <span class="bs-card-emoji" aria-hidden="true">🏷️</span>
+                            <h3>PeelTag (4 pack)</h3>
+                            <p class="bs-card-price">$99.00</p>
+                            <button class="lg-glass bs-card-buy" type="button" data-add data-name="PeelTag (4 pack)" data-price="99">Add to Bag</button>
+                        </article>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Quick links -->
+        <section class="bs-quicklinks" aria-labelledby="quicklinks-title">
+            <h2 id="quicklinks-title">Quick Links</h2>
+            <ul>
+                <li><a href="#help">Find a Store</a></li>
+                <li><a href="#top" data-bag-open>Order Status</a></li>
+                <li><a href="#help">Shopping Help</a></li>
+                <li><a href="#help">Returns</a></li>
+                <li><a href="#top" data-bag-open>Your Bag</a></li>
+            </ul>
+        </section>
     </main>
 
-    
-    <div id="demo-modal" class="lg-modal" role="dialog" aria-labelledby="modal-title" aria-modal="true">
-        <div class="lg-modal-backdrop" onclick="LiquidGlass.modal.close('demo-modal')"></div>
+    <footer class="bs-footer">
+        <div class="bs-footer-inner">
+            <p class="bs-footnote">* Monthly pricing is a made-up demo at 0% APR over 24 months. Banana Store is a meme: nothing here is for sale, and it isn't affiliated with Apple.</p>
+            <p class="bs-footnote">Liquid glass refraction adapted from <a href="https://github.com/nikdelvin/liquid-glass" target="_blank" rel="noopener noreferrer">nikdelvin/liquid-glass</a>. 3D foldable from <a href="https://github.com/akashtdev/iphone-duo-animation" target="_blank" rel="noopener noreferrer">akashtdev/iphone-duo-animation</a>. Both MIT.</p>
+
+            <div class="bs-footer-columns">
+                <details>
+                    <summary>Shop and Learn</summary>
+                    <ul><li><a href="#store">Store</a></li><li><a href="#latest">iPhone</a></li><li><a href="#latest">BanaBook</a></li><li><a href="#latest">Peel Pad</a></li><li><a href="#accessories">Accessories</a></li></ul>
+                </details>
+                <details>
+                    <summary>Banana Store</summary>
+                    <ul><li><a href="#help">Find a Store</a></li><li><a href="#help">Today at Banana</a></li><li><a href="#help">Banana Trade In</a></li><li><a href="#help">Order Status</a></li></ul>
+                </details>
+                <details>
+                    <summary>Banana Values</summary>
+                    <ul><li><a href="#top">Environment</a></li><li><a href="#top">Accessibility</a></li><li><a href="#top">Privacy</a></li></ul>
+                </details>
+            </div>
+
+            <div class="bs-footer-legal">
+                <p>Copyright © 2026 Banana Inc. All rights reserved.</p>
+                <p class="bs-footer-legal-links"><a href="#top">Privacy Policy</a><a href="#top">Terms of Use</a><a href="#top">Sales and Refunds</a><a href="#top">Legal</a></p>
+                <p>United States</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bag -->
+    <div id="bag-modal" class="lg-modal" role="dialog" aria-labelledby="bag-title" aria-modal="true">
+        <div class="lg-modal-backdrop" onclick="LiquidGlass.modal.close('bag-modal')"></div>
         <div class="lg-modal-content">
             <div class="lg-modal-header">
-                <h3 id="modal-title" class="lg-modal-title">Welcome to Liquid Glass UI</h3>
-                <button class="lg-modal-close" onclick="LiquidGlass.modal.close('demo-modal')" aria-label="Close modal">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <h3 id="bag-title" class="lg-modal-title">Bag</h3>
+                <button class="lg-modal-close" onclick="LiquidGlass.modal.close('bag-modal')" aria-label="Close bag">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
             <div class="lg-modal-body">
-                <p>This modal demonstrates the beautiful frosted glass effect that makes Liquid Glass UI special.</p>
-                <p>Notice how the background blurs and the modal feels like it's floating above the content.</p>
+                <ul class="bs-bag-list" data-bag-list></ul>
+                <p class="bs-bag-empty" data-bag-empty>Your bag is empty.</p>
+                <p class="bs-bag-total" data-bag-total hidden></p>
             </div>
             <div class="lg-modal-footer">
-                <button class="lg-button lg-button-ghost" onclick="LiquidGlass.modal.close('demo-modal')">Cancel</button>
-                <button class="lg-button lg-button-primary" onclick="LiquidGlass.modal.close('demo-modal')">Got it!</button>
+                <button class="lg-glass bs-button bs-button-wide" data-checkout>Check Out</button>
             </div>
         </div>
     </div>
 
-
-    <script src="main.js"></script>
 </body>
 </html>

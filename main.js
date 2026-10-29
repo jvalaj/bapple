@@ -123,8 +123,10 @@ const LiquidGlass = (function() {
         container.id = 'lg-toast-container';
         container.style.cssText = `
           position: fixed;
-          top: 20px;
-          right: 20px;
+          top: calc(60px + env(safe-area-inset-top));
+          left: 16px;
+          right: 16px;
+          margin-left: auto;
           z-index: 9999;
           display: flex;
           flex-direction: column;
@@ -163,11 +165,13 @@ const LiquidGlass = (function() {
         align-items: center;
         gap: 12px;
         padding: 16px;
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        background: rgba(29, 29, 31, 0.78);
+        color: #f5f5f7;
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
         animation: lg-toast-slide-in 0.3s ease-out;
       `;
 
@@ -358,6 +362,7 @@ const LiquidGlass = (function() {
         }
 
         .lg-toast-close {
+          color: inherit;
           width: 20px;
           height: 20px;
           display: flex;
@@ -431,38 +436,70 @@ if (typeof window !== 'undefined') {
 }
 
 // ========================================
-// Glass Distortion Interactive Effects
+// Preloader
 // ========================================
+// Fastlane's loading screen: blank white with a thin progress bar for at least 2s, so the heavy work
+// (3D phone, backdrop, fonts) happens behind it. The page then reveals and the phone flies in.
 (function() {
   'use strict';
-  
-  // Simplified glass effects - just add mouse interactions without wrapping content
-  function initGlassDistortion() {
-    const glassElements = document.querySelectorAll(
-      '.lg-card, .lg-button, .lg-feature-card, .lg-modal-content, .lg-alert, .lg-nav'
-    );
-    
-    glassElements.forEach(element => {
-      if (element.hasAttribute('data-glass-initialized')) return;
-      element.setAttribute('data-glass-initialized', 'true');
-      
-      // Add simple hover effect
-      element.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-4px) scale(1.02)';
-      });
-      
-      element.addEventListener('mouseleave', function() {
-        this.style.transform = '';
-      });
-    });
+
+  const MIN = 2000;
+  const MAX = 8000;
+  const root = document.documentElement;
+  const bar = document.querySelector('.lg-preloader-bar span');
+  const t0 = performance.now();
+  let duoReady = false;
+  let assetsReady = false;
+  let shown = 0;
+  let done = false;
+
+  function reveal() {
+    if (done) return;
+    done = true;
+    root.classList.add('lg-loaded');
+    document.body.classList.remove('lg-loading');
+    // Same task as lg-loaded, so the hero can decide what to show before anything paints
+    document.dispatchEvent(new Event('lg:reveal'));
+    const preloader = document.querySelector('.lg-preloader');
+    if (preloader) {
+      preloader.setAttribute('aria-busy', 'false');
+      setTimeout(() => preloader.remove(), 600);
+    }
+    // Scrolling is locked while loading, so a #section link never got there on its own.
+    if (location.hash.length > 1) {
+      const target = document.getElementById(location.hash.slice(1));
+      if (target) target.scrollIntoView();
+    }
   }
-  
-  // Initialize on DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initGlassDistortion);
-  } else {
-    initGlassDistortion();
+
+  // The 3D phone says when it's ready (or failed) from its iframe
+  window.addEventListener('message', (event) => {
+    if (event.origin !== location.origin) return;
+    if (event.data === 'duo:ready' || event.data === 'duo:failed') duoReady = true;
+  });
+
+  // The backdrop is the whole look, so wait for it and the fonts too
+  const backdrop = new Image();
+  backdrop.src = window.matchMedia('(min-width: 1024px)').matches
+    ? 'assets/pro.webp'
+    : 'assets/pro-mobile.webp';
+  const backdropReady = backdrop.decode ? backdrop.decode() : Promise.resolve();
+  const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
+  Promise.all([backdropReady, fontsReady]).then(() => { assetsReady = true; }, () => { assetsReady = true; });
+
+  // The bar eases toward the time elapsed, holding at 90% until everything is in
+  function tick(now) {
+    const t = now - t0;
+    const ok = (duoReady && assetsReady) || t > MAX;
+    const target = Math.min(t / MIN, ok ? 1 : 0.9);
+    shown += (target - shown) * 0.18;
+    if (bar) bar.style.transform = `scaleX(${Math.min(shown, 1).toFixed(4)})`;
+    if (ok && t >= MIN && shown > 0.985) {
+      if (bar) bar.style.transform = 'scaleX(1)';
+      setTimeout(reveal, 120);
+      return;
+    }
+    requestAnimationFrame(tick);
   }
-  
-  console.log('🌊 Glass hover effects initialized!');
+  requestAnimationFrame(tick);
 })();

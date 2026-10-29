@@ -1,38 +1,29 @@
-#  Liquid Glass UI
+# 🍌 Banana Store
 
-Check out this page where I have implemented it: https://jvalaj.github.io/liquid-glass-try/
+A meme of the Apple online Store, launching the **iPhone Duo**. The landing screen floats a real 3D foldable over an RGB backdrop, with liquid glass buttons under it. Plain HTML, CSS and JS, no build step.
 
+Not affiliated with Apple. Nothing is for sale. It's a banana.
 
-### first Component
+## Run it
 
-```html
-<!-- Button -->
-<button class="lg-button lg-button-primary">Click Me</button>
-
-<!-- Card -->
-<div class="lg-card">
-    <div class="lg-card-header">
-        <h4 class="lg-card-title">Card Title</h4>
-    </div>
-    <div class="lg-card-content">
-        <p>Your content here...</p>
-    </div>
-</div>
+```sh
+python3 -m http.server 8000
 ```
 
+Then open http://localhost:8000 (or your computer's local IP on your phone).
 
-## browser Support
+## What's where
 
-- Chrome (latest)
-- ⚠️ Safari (latest)
-- ✅ Edge (latest)
-- ⚠️ IE11 (not supported - requires `backdrop-filter`)
+- `index.html`, `style.css`: the store page. Mobile-first and portrait-first, using Apple's system font (SF Pro on Apple devices, Inter elsewhere).
+- `store.js`: the bag (saved in localStorage), phone menu, footer accordions, and pausing the 3D hero when it's off screen.
+- `main.js`: modal, toasts and the preloader.
+- `liquid-glass.js`: real SVG refraction on `.lg-glass` elements in Chromium, with a frosted fallback on Safari, every iPhone browser and Firefox.
+- `duo/`: production build of the 3D foldable. `duo/hero.html` is the floating, transparent version used on the landing screen; `duo/index.html` is the full interactive viewer ("Explore in 3D").
+- `assets/`: the RGB backdrop and stills of the phone used as card images and as the hero poster.
 
-## acknowledgments
+## Credits
 
-- Inspired by Apple's design language and iOS/macOS interfaces
-- I did not want to use WebGL / any other 3d rendering library/ framework for simplicity and accessibility
-- Built with modern CSS and vanilla JavaScript
+- Liquid glass refraction technique and RGB background: [nikdelvin/liquid-glass](https://github.com/nikdelvin/liquid-glass) (MIT)
+- 3D foldable: [akashtdev/iphone-duo-animation](https://github.com/akashtdev/iphone-duo-animation) (MIT, license in `duo/LICENSE`). The floating hero entry (`hero.html` / `src/hero.ts`) was added on top of it.
 
-
-Made with ❤️ by Jvalaj for the web. Inspired by Apple's beautiful design language.
+Made by Jvalaj.

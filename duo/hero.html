@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>iPhone Duo</title>
+    <link rel="preload" href="./assets/iPhone_Duo_Render.usdc" as="fetch" crossorigin />
+    <style>
+      html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+      #stage { position: fixed; inset: 0; opacity: 0; transition: opacity 600ms ease; }
+      #stage.is-ready { opacity: 1; }
+      #stage canvas { display: block; width: 100%; height: 100%; }
+      #obstacle { position: fixed; width: 0; height: 0; }
+    </style>
+    <script type="module" crossorigin src="./assets/hero-intro.js?v=12"></script>
+    <link rel="modulepreload" crossorigin href="./assets/modulepreload-polyfill-B5Qt9EMX.js">
+    <link rel="modulepreload" crossorigin href="./assets/three-Jlrdm0C4.js">
+    <link rel="modulepreload" crossorigin href="./assets/stage-BOfTG7bR.js">
+  </head>
+  <body>
+    <div id="stage" aria-hidden="true"></div>
+    <div id="obstacle"></div>
+  </body>
+</html>
