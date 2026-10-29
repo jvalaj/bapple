@@ -177,6 +177,24 @@ body.lg-loading {
   backdrop-filter: var(--lg-frost);
 }
 
+/* WebKit and Firefox: liquid-glass.js redraws the hero wallpaper here with the edge bend.
+   It sits over the frost and fades out toward the middle. */
+.lg-mirror {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* While the mirror does the bending, keep the frost light so what's behind stays crisp, like the Chromium glass */
+.lg-mirror-on > .lg-refract {
+  -webkit-backdrop-filter: blur(1px) saturate(1.5) brightness(1.1);
+  backdrop-filter: blur(1px) saturate(1.5) brightness(1.1);
+}
+
 /* Tint and rim, painted above the refraction */
 .lg-glass::after {
   content: "";

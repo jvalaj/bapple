@@ -9,12 +9,14 @@
  *
  * Only Chromium renders SVG filters inside `backdrop-filter`. Safari, every iOS browser
  * (Chrome on iPhone is WebKit underneath) and Firefox keep the frosted blur fallback
- * that style.css puts on `.lg-refract`, so the glass is always visible.
+ * that style.css puts on `.lg-refract`, so the glass is always visible. Glass marked
+ * `data-mirror` also gets the bend there: see "Mirror" below.
  */
 (function () {
   'use strict';
 
   const supportsRefraction = (() => {
+    if (/[?&]lg=frosted/.test(location.search)) return false; // handy for checking the fallback in Chrome
     const ua = navigator.userAgent;
     // WebKit can parse url() here but paints nothing, which is what left the glass blank on iPhone.
     const webkitOnly = /CriOS|FxiOS|EdgiOS/.test(ua) || (/AppleWebKit/.test(ua) && !/Chrome\/|Chromium\//.test(ua));
@@ -119,10 +121,229 @@
     (root || document).querySelectorAll('.lg-glass').forEach(attach);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => init());
-  } else {
+
+  /* ---------- Mirror: the bend for WebKit and Firefox ----------
+   * Those engines can't use an SVG filter in backdrop-filter, but the hero's backdrop is a known picture:
+   * the wallpaper under its dimming gradient. Glass marked `data-mirror` gets a canvas that redraws that
+   * picture behind itself with the same edge bend and colour split as the Chromium filter. The canvas
+   * fades out toward the middle, so live content (text, the 3D phone) still shows through the frost there. */
+  const MAX_DPR = 3;
+
+  function rgba(text) {
+    const n = text.match(/[\d.]+/g).map(Number);
+    return `rgba(${n[0]}, ${n[1]}, ${n[2]}, ${n.length > 3 ? n[3] : 1})`;
+  }
+
+  // Colour stops of a CSS linear-gradient, as computed: "linear-gradient(rgba(..), rgba(..) 12%, ...)"
+  function gradientStops(css) {
+    const stops = [...css.matchAll(/(rgba?\([^)]*\))(?:\s+([\d.]+)%)?/g)].map((m) => ({ color: rgba(m[1]), at: m[2] }));
+    return stops.map((stop, i) => ({ color: stop.color, at: stop.at !== undefined ? stop.at / 100 : i / Math.max(stops.length - 1, 1) }));
+  }
+
+  // Signed distance from a point inside a rounded rect to its edge (positive inside)
+  function insetDistance(x, y, width, height, radius) {
+    const qx = Math.abs(x - width / 2) - (width / 2 - radius);
+    const qy = Math.abs(y - height / 2) - (height / 2 - radius);
+    const outside = Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - radius;
+    return -outside;
+  }
+
+  function startMirror() {
+    const hero = document.querySelector('.bs-hero');
+    const glasses = [...document.querySelectorAll('.lg-glass[data-mirror]')];
+    if (!hero || !glasses.length) return;
+
+    const mirrors = glasses.map((glass) => {
+      const canvas = document.createElement('canvas');
+      canvas.className = 'lg-mirror';
+      canvas.setAttribute('aria-hidden', 'true');
+      canvas.hidden = true;
+      (glass.querySelector(':scope > .lg-refract') || glass.firstChild).after(canvas);
+      return { glass, canvas, ctx: canvas.getContext('2d'), key: '', map: null };
+    });
+
+    let backdrop = null;
+    let image = null;
+    let imageUrl = '';
+
+    // The hero as painted behind its content: wallpaper on a layer raised by --bs-hero-bg-lift, cover-fit, then the dimming gradient
+    function paintBackdrop() {
+      const rect = hero.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.scale(dpr, dpr);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, rect.width, rect.height);
+
+      const lift = parseFloat(getComputedStyle(hero).getPropertyValue('--bs-hero-bg-lift')) || 0;
+      const areaHeight = rect.height + lift;
+      const scale = Math.max(rect.width / image.naturalWidth, areaHeight / image.naturalHeight);
+      const width = image.naturalWidth * scale;
+      const height = image.naturalHeight * scale;
+      ctx.drawImage(image, (rect.width - width) / 2, -lift + (areaHeight - height) / 2, width, height);
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, rect.height);
+      gradientStops(getComputedStyle(hero, '::before').backgroundImage).forEach((stop) => gradient.addColorStop(stop.at, stop.color));
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, rect.width, rect.height);
+
+      backdrop = { ctx, dpr, left: rect.left + window.scrollX, top: rect.top + window.scrollY, width: rect.width, height: rect.height };
+      mirrors.forEach((mirror) => { mirror.key = ''; });
+    }
+
+    // Per-pixel bend for one glass size: a unit offset toward the middle that grows near the edge, plus the canvas alpha
+    function bendMap(mirror, width, height, dpr) {
+      const data = mirror.glass.dataset;
+      const radius = Math.min(parseFloat(getComputedStyle(mirror.glass).borderTopLeftRadius) || 0, width / 2, height / 2);
+      const depth = parseFloat(data.depth || Math.min(10, Math.min(width, height) / 5));
+      const pixelWidth = Math.round(width * dpr);
+      const pixelHeight = Math.round(height * dpr);
+      const dx = new Float32Array(pixelWidth * pixelHeight);
+      const dy = new Float32Array(pixelWidth * pixelHeight);
+      const alpha = new Uint8ClampedArray(pixelWidth * pixelHeight);
+      for (let y = 0; y < pixelHeight; y++) {
+        for (let x = 0; x < pixelWidth; x++) {
+          const px = (x + 0.5) / dpr;
+          const py = (y + 0.5) / dpr;
+          const edge = Math.max(0, 1 - insetDistance(px, py, width, height, radius) / depth);
+          const bend = edge * edge;
+          const i = y * pixelWidth + x;
+          dx[i] = ((width / 2 - px) / (width / 2)) * bend;
+          dy[i] = ((height / 2 - py) / (height / 2)) * bend;
+          alpha[i] = Math.min(1, edge * 1.6) * 255;
+        }
+      }
+      return {
+        width: pixelWidth,
+        height: pixelHeight,
+        dx, dy, alpha,
+        // Same strengths as the Chromium filter: a displacement scale of s moves pixels by up to s/2
+        reach: [
+          (parseFloat(data.strength || 100) + parseFloat(data.aberration || 2) * 2) / 2,
+          (parseFloat(data.strength || 100) + parseFloat(data.aberration || 2)) / 2,
+          parseFloat(data.strength || 100) / 2,
+        ],
+        out: mirror.ctx.createImageData(Math.max(pixelWidth, 1), Math.max(pixelHeight, 1)),
+      };
+    }
+
+    function render(mirror) {
+      const { glass, canvas, ctx } = mirror;
+      const width = glass.offsetWidth;
+      const height = glass.offsetHeight;
+      const rect = glass.getBoundingClientRect();
+      // offsetWidth ignores transforms, so centre the untransformed box on the painted one
+      const left = rect.left + rect.width / 2 - width / 2 + window.scrollX - backdrop.left;
+      const top = rect.top + rect.height / 2 - height / 2 + window.scrollY - backdrop.top;
+      const over = width > 0 && top < backdrop.height && top + height > 0;
+      canvas.hidden = !over;
+      glass.classList.toggle('lg-mirror-on', over);
+      if (!over) return;
+
+      const { dpr } = backdrop;
+      const key = [width, height, Math.round(left * dpr), Math.round(top * dpr)].join();
+      if (key === mirror.key) return;
+      mirror.key = key;
+      if (!mirror.map || mirror.map.width !== Math.round(width * dpr) || mirror.map.height !== Math.round(height * dpr)) {
+        mirror.map = bendMap(mirror, width, height, dpr);
+        canvas.width = mirror.map.width;
+        canvas.height = mirror.map.height;
+      }
+
+      const map = mirror.map;
+      const pad = Math.ceil(map.reach[0] * dpr) + 1;
+      const sourceWidth = map.width + pad * 2;
+      const sourceHeight = map.height + pad * 2;
+      const sourceLeft = Math.round(left * dpr) - pad;
+      const sourceTop = Math.round(top * dpr) - pad;
+      const source = backdrop.ctx.getImageData(sourceLeft, sourceTop, sourceWidth, sourceHeight).data;
+      // Past the hero's edges getImageData gives transparent black, which would rim the glass in black.
+      // Clamp samples to the part that's really there, so the edge pixels stretch out instead.
+      const pageWidth = backdrop.ctx.canvas.width;
+      const pageHeight = backdrop.ctx.canvas.height;
+      const minX = Math.max(0, -sourceLeft);
+      const maxX = Math.min(sourceWidth, pageWidth - sourceLeft) - 1;
+      const minY = Math.max(0, -sourceTop);
+      const maxY = Math.min(sourceHeight, pageHeight - sourceTop) - 1;
+      const out = map.out.data;
+      const reach = map.reach.map((r) => r * dpr);
+
+      for (let y = 0, i = 0; y < map.height; y++) {
+        for (let x = 0; x < map.width; x++, i++) {
+          const o = i * 4;
+          const a = map.alpha[i];
+          if (a === 0) { out[o + 3] = 0; continue; }
+          for (let c = 0; c < 3; c++) {
+            const sx = Math.min(maxX, Math.max(minX, Math.round(x + pad + map.dx[i] * reach[c])));
+            const sy = Math.min(maxY, Math.max(minY, Math.round(y + pad + map.dy[i] * reach[c])));
+            out[o + c] = source[(sy * sourceWidth + sx) * 4 + c];
+          }
+          out[o + 3] = a;
+        }
+      }
+      ctx.putImageData(map.out, 0, 0);
+    }
+
+    let queued = false;
+    function renderAll() {
+      queued = false;
+      if (backdrop) mirrors.forEach(render);
+    }
+    function queue() {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(renderAll);
+    }
+
+    function refresh() {
+      const match = /url\(["']?(.*?)["']?\)/.exec(getComputedStyle(hero, '::after').backgroundImage);
+      if (!match) return;
+      if (match[1] === imageUrl && image) {
+        paintBackdrop();
+        queue();
+        return;
+      }
+      imageUrl = match[1];
+      const next = new Image();
+      next.onload = () => {
+        if (next.src !== new URL(imageUrl, location.href).href) return;
+        image = next;
+        paintBackdrop();
+        queue();
+      };
+      next.src = imageUrl;
+    }
+
+    let resizeTimer = 0;
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(refresh, 150);
+    });
+    // The hero buttons rise in when the preloader lifts; follow them until they settle
+    document.addEventListener('transitionend', queue);
+    document.addEventListener('lg:reveal', () => {
+      const until = performance.now() + 1500;
+      (function follow() {
+        renderAll();
+        if (performance.now() < until) requestAnimationFrame(follow);
+      })();
+    });
+    refresh();
+  }
+
+  function boot() {
     init();
+    if (!supportsRefraction) startMirror();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
   }
 
   window.LiquidGlassEngine = { init, refresh: (el) => draw(el), supportsRefraction };
