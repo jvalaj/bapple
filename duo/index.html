@@ -13,12 +13,26 @@
     <script type="module" crossorigin src="./assets/main-BdEQKyf-.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/modulepreload-polyfill-B5Qt9EMX.js">
     <link rel="stylesheet" crossorigin href="./assets/main-D3qD_2T2.css">
+    <style>
+      /* Way back to the store: a small blue link above the title, like Apple's breadcrumbs */
+      .page-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+      .home-link { display: inline-flex; align-items: center; gap: 2px; margin-left: -4px; padding: 4px; border-radius: 8px; font-size: 14px; color: var(--accent); text-decoration: none; }
+      .home-link svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .home-link:hover { text-decoration: underline; }
+      .home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    </style>
   </head>
   <body>
     <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
     <main class="page">
       <div class="page-header">
-        <h1 class="page-title">Take a closer look.</h1>
+        <div class="page-heading">
+          <a class="home-link" href="../">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6-6 6 6 6" /></svg>
+            Banana Store
+          </a>
+          <h1 class="page-title">Take a closer look.</h1>
+        </div>
         <div class="upload-row">
           <button
             type="button"
