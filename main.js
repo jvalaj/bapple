@@ -440,15 +440,18 @@ if (typeof window !== 'undefined') {
 // ========================================
 // Fastlane's loading screen: blank white with a thin progress bar for at least 2s, so the heavy work
 // (3D phone, backdrop, fonts) happens behind it. The page then reveals and the phone flies in.
+// It waits for the 3D phone however long its download takes, so the entrance always plays as designed;
+// only a dead connection (no word from the phone at all) falls back to the still image after LAST_RESORT.
 (function() {
   'use strict';
 
   const MIN = 2000;
-  const MAX = 8000;
+  const LAST_RESORT = 25000;
   const root = document.documentElement;
   const bar = document.querySelector('.lg-preloader-bar span');
   const t0 = performance.now();
   let duoReady = false;
+  let duoProgress = 0;
   let assetsReady = false;
   let shown = 0;
   let done = false;
@@ -474,8 +477,9 @@ if (typeof window !== 'undefined') {
 
   // The 3D phone says when it's ready (or failed) from its iframe
   window.addEventListener('message', (event) => {
-    if (event.origin !== location.origin) return;
+    if (event.origin !== location.origin || typeof event.data !== 'string') return;
     if (event.data === 'duo:ready' || event.data === 'duo:failed') duoReady = true;
+    else if (event.data.startsWith('duo:progress:')) duoProgress = Math.max(duoProgress, Number(event.data.slice(13)) || 0);
   });
 
   // The backdrop is the whole look, so wait for it and the fonts too
@@ -487,11 +491,13 @@ if (typeof window !== 'undefined') {
   const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
   Promise.all([backdropReady, fontsReady]).then(() => { assetsReady = true; }, () => { assetsReady = true; });
 
-  // The bar eases toward the time elapsed, holding at 90% until everything is in
+  // The bar eases toward the time elapsed, but never runs ahead of the phone's real download,
+  // then creeps on while the phone gets ready to draw, so a slow connection never looks frozen
   function tick(now) {
     const t = now - t0;
-    const ok = (duoReady && assetsReady) || t > MAX;
-    const target = Math.min(t / MIN, ok ? 1 : 0.9);
+    const ok = (duoReady && assetsReady) || t > LAST_RESORT;
+    const waiting = Math.min(0.1 + 0.8 * duoProgress, 0.9) + 0.07 * (1 - Math.exp(-Math.max(t - MIN, 0) / 6000));
+    const target = Math.min(t / MIN, ok ? 1 : waiting);
     shown += (target - shown) * 0.18;
     if (bar) bar.style.transform = `scaleX(${Math.min(shown, 1).toFixed(4)})`;
     if (ok && t >= MIN && shown > 0.985) {

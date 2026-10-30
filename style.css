@@ -116,8 +116,9 @@ sup {
   place-items: center;
   background: #fff;
   transition: opacity 450ms ease;
-  /* Failsafe: if the script never runs, the screen still clears itself instead of blocking the page */
-  animation: lg-preloader-failsafe 400ms ease 14s forwards;
+  /* Failsafe: if the script never runs, the screen still clears itself instead of blocking the page.
+     Later than main.js's 25s last resort, so it never cuts a slow download short. */
+  animation: lg-preloader-failsafe 400ms ease 30s forwards;
 }
 
 .lg-loaded .lg-preloader {

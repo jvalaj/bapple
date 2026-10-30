@@ -115,6 +115,7 @@
     const poster = document.querySelector('[data-hero-poster]');
     if (!frame) return;
 
+    const POSTER_FADE = 600; // matches bs-fade-out in style.css
     let ready = false;
     let revealed = document.documentElement.classList.contains('lg-loaded');
     let started = false;
@@ -127,10 +128,15 @@
     function start() {
       if (started || !ready || !revealed) return;
       started = true;
-      frame.classList.add('is-ready');
+      // Arrived after the still went up (very slow connection): fade the still out first,
+      // so the live phone's fly-in never crosses a second phone
+      const late = !poster.classList.contains('is-skipped');
       poster.classList.add('is-hidden');
-      send('duo:start');
-      if (!visible) send('duo:pause');
+      setTimeout(() => {
+        frame.classList.add('is-ready');
+        send('duo:start');
+        if (!visible) send('duo:pause');
+      }, late ? POSTER_FADE : 0);
     }
 
     document.addEventListener('lg:reveal', () => {

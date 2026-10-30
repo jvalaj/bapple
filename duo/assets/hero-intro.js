@@ -32,14 +32,34 @@ const VIEWPOINT_FALLOFF = 1.5;
 const SHOWCASE_SCALE = 1;
 const TURN_SPEED = (Math.PI * 2) / 20; // one full turn every 20 seconds
 
+// A flaky connection shouldn't cost the intro: try the downloads a few times before giving up
+const LOAD_ATTEMPTS = 3;
+
 const easeInOutCubic = (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 const easeOutCubic = (t) => 1 - (1 - t) ** 3;
+
+function tell(message) {
+  if (window.parent !== window) window.parent.postMessage(message, window.location.origin);
+}
+
+async function loadAssets() {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      // The model is most of the download, so its progress drives the page's loading bar
+      return await Promise.all([loadModel((fraction) => tell(`duo:progress:${fraction.toFixed(3)}`)), loadTextures()]);
+    } catch (error) {
+      if (attempt >= LOAD_ATTEMPTS) throw error;
+      console.warn(`iPhone Duo download failed, retrying (${attempt}/${LOAD_ATTEMPTS - 1})`, error);
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+    }
+  }
+}
 
 async function main() {
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const host = document.getElementById("stage");
   const obstacle = document.getElementById("obstacle");
-  const [model, textures] = await Promise.all([loadModel(), loadTextures()]);
+  const [model, textures] = await loadAssets();
   const stage = createStage(host, obstacle);
   stage.renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
   stage.renderer.setSize(host.clientWidth, host.clientHeight);
@@ -151,10 +171,10 @@ async function main() {
 
   // Opened on its own (not inside the store page): nobody will send "duo:start"
   if (window.parent === window) start();
-  else window.parent.postMessage("duo:ready", window.location.origin);
+  else tell("duo:ready");
 }
 
 main().catch((error) => {
   console.error(error);
-  window.parent.postMessage("duo:failed", window.location.origin);
+  tell("duo:failed");
 });
