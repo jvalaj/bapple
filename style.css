@@ -434,26 +434,106 @@ body:not(.bs-menu-open) .bs-globalnav.is-over-hero .bs-bag-count {
   z-index: 1;
 }
 
-/* Copy and buttons rise in once the preloader lifts */
-.bs-hero-copy,
-.bs-hero-actions,
-.bs-hero-price {
+/* The landing intro, one thing at a time (initIntro in store.js steps through it with classes on <html>):
+   the nav slides down, "Introducing" types itself out, "iPhone Duo" flips down letter by letter out of a
+   blur, the phone flies in (bs-intro-phone), then the buttons and price rise up (bs-intro-rest).
+   Everything is only hidden under bs-intro, so if store.js never runs the hero just shows. */
+.bs-intro .bs-globalnav {
+  translate: 0 -100%;
+  transition: translate 1000ms var(--bs-ease-out);
+}
+
+.bs-intro.lg-loaded .bs-globalnav {
+  translate: none;
+}
+
+.bs-intro .bs-hero-eyebrow .bs-char {
+  opacity: 0;
+}
+
+.bs-intro .bs-hero-eyebrow .bs-char.is-typed {
+  opacity: 1;
+}
+
+/* Typing caret. Negative margin so it never nudges the centred line while it moves along. */
+.bs-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin: 0 -1px 0 -1px;
+  vertical-align: -0.15em;
+  background: currentColor;
+  border-radius: 1px;
+  animation: bs-caret 1s steps(1) infinite;
+  transition: opacity 300ms var(--bs-ease);
+}
+
+.bs-caret.is-done {
+  opacity: 0;
+}
+
+@keyframes bs-caret {
+  50% {
+    background: transparent;
+  }
+}
+
+/* Each letter hangs from its top edge, tipped back and blurred, then swings down into place */
+.bs-hero-title {
+  perspective: 700px;
+}
+
+.bs-hero-title .bs-letter {
+  display: inline-block;
+}
+
+.bs-intro .bs-hero-title .bs-letter {
+  opacity: 0;
+  filter: blur(14px);
+  transform: translateY(-0.35em) rotateX(-85deg);
+  transform-origin: 50% 0;
+  transition: opacity 700ms var(--bs-ease-out), filter 1000ms var(--bs-ease-out), transform 1100ms var(--bs-ease-out);
+  transition-delay: calc(var(--i) * 60ms);
+}
+
+.bs-intro .bs-hero-title.is-in .bs-letter {
+  opacity: 1;
+  filter: none;
+  transform: none;
+}
+
+.bs-intro .bs-hero-actions,
+.bs-intro .bs-hero-price {
   opacity: 0;
   transform: translateY(24px);
-  transition: opacity 900ms var(--bs-ease-out), transform 900ms var(--bs-ease-out);
+  transition: opacity 1000ms var(--bs-ease-out), transform 1000ms var(--bs-ease-out);
 }
 
-.bs-hero-actions {
-  transition-delay: 350ms;
+.bs-intro .bs-hero-price {
+  transition-delay: 150ms;
 }
 
-.bs-hero-price {
-  transition-delay: 450ms;
+.bs-intro-rest .bs-hero-actions,
+.bs-intro-rest .bs-hero-price {
+  opacity: 1;
+  transform: none;
 }
 
-.lg-loaded .bs-hero-copy,
-.lg-loaded .bs-hero-actions,
-.lg-loaded .bs-hero-price {
+/* The nav drops in too, left to right. Phones only have the logo and icons up there. */
+.bs-intro .bs-logo,
+.bs-intro .bs-globalnav-actions > * {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 800ms var(--bs-ease-out), transform 800ms var(--bs-ease-out);
+}
+
+.bs-intro .bs-logo { transition-delay: 200ms; }
+.bs-intro .bs-globalnav-actions > :nth-child(1) { transition-delay: 450ms; }
+.bs-intro .bs-globalnav-actions > :nth-child(2) { transition-delay: 510ms; }
+.bs-intro .bs-globalnav-actions > :nth-child(3) { transition-delay: 570ms; }
+
+.lg-loaded .bs-logo,
+.lg-loaded .bs-globalnav-actions > * {
   opacity: 1;
   transform: none;
 }
@@ -514,7 +594,7 @@ body:not(.bs-menu-open) .bs-globalnav.is-over-hero .bs-bag-count {
   transition: opacity 600ms var(--bs-ease);
 }
 
-.lg-loaded .bs-hero-poster {
+.bs-intro-phone .bs-hero-poster {
   animation: bs-float-in 1400ms var(--bs-ease-out) forwards, bs-bob 4s ease-in-out 1400ms infinite;
 }
 
@@ -524,7 +604,7 @@ body:not(.bs-menu-open) .bs-globalnav.is-over-hero .bs-bag-count {
   display: none;
 }
 
-.lg-loaded .bs-hero-poster.is-hidden {
+.bs-intro-phone .bs-hero-poster.is-hidden {
   animation: bs-fade-out 600ms var(--bs-ease) forwards;
   pointer-events: none;
 }
@@ -575,6 +655,16 @@ body:not(.bs-menu-open) .bs-globalnav.is-over-hero .bs-bag-count {
   cursor: grab;
 }
 
+/* Touch screens: the oversized frame stays out of the way so the page scrolls, and the stage
+   turns sideways swipes into spins (store.js) */
+.bs-touch .bs-hero-duo.is-ready {
+  pointer-events: none;
+}
+
+.bs-touch .bs-hero-stage {
+  touch-action: pan-y;
+}
+
 .bs-hero-actions {
   display: flex;
   gap: 12px;
@@ -585,6 +675,25 @@ body:not(.bs-menu-open) .bs-globalnav.is-over-hero .bs-bag-count {
   font-size: 15px;
   color: #e8e8ed;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+}
+
+/* Scroll entrances, set up by initReveal in store.js. Without JS (or with reduced motion) nothing gets the
+   class, so nothing is ever hidden. The delay is per item so things that arrive together come in one by one. */
+.bs-reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 900ms var(--bs-ease-out), transform 1100ms var(--bs-ease-out);
+  transition-delay: var(--bs-reveal-delay, 0ms);
+}
+
+/* Shelf rows slide in from the side as well as rising, like they're being dealt out */
+.bs-shelf > ul > .bs-reveal {
+  transform: translate(48px, 24px);
+}
+
+.bs-reveal.is-revealed {
+  opacity: 1;
+  transform: none;
 }
 
 /* ========================================
@@ -1338,6 +1447,30 @@ body:not(.bs-menu-open) .bs-globalnav.is-over-hero .bs-bag-count {
   }
 }
 
+@media (min-width: 834px) {
+  .bs-intro .bs-globalnav-links > li {
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 800ms var(--bs-ease-out), transform 800ms var(--bs-ease-out);
+    transition-delay: calc(240ms + var(--n) * 30ms);
+  }
+
+  .bs-globalnav-links > li:nth-child(1) { --n: 0; }
+  .bs-globalnav-links > li:nth-child(2) { --n: 1; }
+  .bs-globalnav-links > li:nth-child(3) { --n: 2; }
+  .bs-globalnav-links > li:nth-child(4) { --n: 3; }
+  .bs-globalnav-links > li:nth-child(5) { --n: 4; }
+  .bs-globalnav-links > li:nth-child(6) { --n: 5; }
+  .bs-globalnav-links > li:nth-child(7) { --n: 6; }
+  .bs-globalnav-links > li:nth-child(8) { --n: 7; }
+  .bs-globalnav-links > li:nth-child(9) { --n: 8; }
+
+  .lg-loaded .bs-globalnav-links > li {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (min-width: 1024px) {
   .bs-hero {
     padding-top: calc(56px + var(--bs-nav-height) + env(safe-area-inset-top));
@@ -1392,13 +1525,7 @@ body:not(.bs-menu-open) .bs-globalnav.is-over-hero .bs-bag-count {
     scroll-behavior: auto;
   }
 
-  .bs-hero-copy,
-  .bs-hero-actions,
-  .bs-hero-price {
-    transition: none;
-  }
-
-  .lg-loaded .bs-hero-poster {
+  .bs-intro-phone .bs-hero-poster {
     animation: none;
     opacity: 1;
     transform: none;

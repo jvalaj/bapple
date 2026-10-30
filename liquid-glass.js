@@ -323,15 +323,18 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(refresh, 150);
     });
-    // The hero buttons rise in when the preloader lifts; follow them until they settle
+    // The nav slides down when the preloader lifts and the hero buttons rise in later in the intro
+    // (store.js); follow each move until it settles
     document.addEventListener('transitionend', queue);
-    document.addEventListener('lg:reveal', () => {
-      const until = performance.now() + 1500;
+    function followFor(ms) {
+      const until = performance.now() + ms;
       (function follow() {
         renderAll();
         if (performance.now() < until) requestAnimationFrame(follow);
       })();
-    });
+    }
+    document.addEventListener('lg:reveal', () => followFor(1500));
+    document.addEventListener('bs:intro-rest', () => followFor(1500));
     refresh();
   }
 

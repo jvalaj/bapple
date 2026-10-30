@@ -9,7 +9,6 @@ import { l as loadModel, a as loadTextures, c as createStage, b as createDuo } f
 
 const MAX_STEP = 1 / 20;
 const MAX_PIXEL_RATIO = 2;
-const PORTRAIT_RATIO = 0.75;
 
 // Fastlane's intro constants
 const FLY_IN = 1.1; // seconds to fly in and spin round
@@ -23,14 +22,17 @@ const START_DISTANCE = 40 / 44;
 const START_PITCH = 1.53 - Math.PI / 2;
 const START_YAW = 0.04;
 
-// Final framing; 1.5x further back because the iframe is 1.5x the stage (see .bs-hero-duo)
-const LANDSCAPE = { distance: 49.5, pitch: 1.5, yaw: 0 };
-const PORTRAIT = { distance: 64.5, pitch: 1.5, yaw: 0 };
+// Final framing; 1.5x further back because the iframe is 1.5x the stage (see .bs-hero-duo).
+// The phone sits open and sideways on every screen, so a narrow (phone) frame pulls the camera back
+// until the open phone fits the width instead of turning it on its side.
+const VIEW = { distance: 49.5, pitch: 1.5, yaw: 0 };
+const FIT_ASPECT = 0.95; // narrower than this and the open phone would clip at the sides
 const VIEWPOINT_FALLOFF = 1.5;
 
 // Showcase: the phone fills the stage fit from the start, then turns slowly round the vertical axis
 const SHOWCASE_SCALE = 1;
 const TURN_SPEED = (Math.PI * 2) / 20; // one full turn every 20 seconds
+const FLING_DECAY = 3; // how fast a touch flick slows down, per second
 
 // A flaky connection shouldn't cost the intro: try the downloads a few times before giving up
 const LOAD_ATTEMPTS = 3;
@@ -70,14 +72,12 @@ async function main() {
   duo.root.scale.setScalar(SHOWCASE_SCALE);
   duo.setFocus(null);
 
-  let portrait = null;
+  let view = VIEW;
   let opened = false;
   function frame() {
-    const next = host.clientHeight > host.clientWidth * PORTRAIT_RATIO;
-    if (next === portrait) return;
-    portrait = next;
-    duo.setRoll(portrait ? "clockwise" : null, "inner");
-    if (opened) stage.applyView(portrait ? PORTRAIT : LANDSCAPE);
+    const aspect = host.clientWidth / Math.max(host.clientHeight, 1);
+    view = { ...VIEW, distance: VIEW.distance * Math.max(1, FIT_ASPECT / aspect) };
+    if (opened) stage.applyView(view);
   }
   frame();
   new ResizeObserver(frame).observe(host);
@@ -91,10 +91,10 @@ async function main() {
   const eye = new Vector3();
   let t = 0;
   let turn = 0;
+  let fling = 0; // spin speed left over from a touch swipe on the store page
   let last = performance.now();
 
   function pose(time) {
-    const view = portrait ? PORTRAIT : LANDSCAPE;
     const fly = reduced ? 1 : MathUtils.clamp(time / FLY_IN, 0, 1);
     const flyEased = easeOutCubic(fly);
     const unfold = reduced ? 1 : MathUtils.clamp((time - OPEN_AT) / OPEN, 0, 1);
@@ -123,11 +123,10 @@ async function main() {
     stage.setOffset([x, y]);
 
     const spin = easeInOutCubic(fly);
-    const roll = portrait ? Math.PI / 2 : 0;
     stage.setPose([
       0,
       MathUtils.lerp(START_SPIN, 0, spin) + turn,
-      roll + START_TILT * (1 - spin) + Math.sin(time * 1.7) * 0.03 * away + Math.sin(time * 0.8) * 0.014 * settle,
+      START_TILT * (1 - spin) + Math.sin(time * 1.7) * 0.03 * away + Math.sin(time * 0.8) * 0.014 * settle,
     ]);
   }
 
@@ -137,6 +136,8 @@ async function main() {
     t += step;
     // The turntable eases in with the settle, so it picks up speed instead of lurching
     if (!reduced) turn = (turn + TURN_SPEED * step * MathUtils.smoothstep(t - (OPEN_AT + OPEN), 0, 1.2)) % (Math.PI * 2);
+    turn += fling * step;
+    fling *= Math.exp(-FLING_DECAY * step);
     pose(t);
     eye.copy(stage.eyeInContent());
     const length = eye.length();
@@ -163,7 +164,12 @@ async function main() {
     if (event.data === "duo:start") start();
     else if (!started) return;
     else if (event.data === "duo:pause") stage.renderer.setAnimationLoop(null);
-    else if (event.data === "duo:play") {
+    else if (typeof event.data === "string" && event.data.startsWith("duo:spin:")) {
+      // On touch screens the store page handles the swipe (so vertical swipes still scroll) and sends the turn here
+      const [, , delta, speed] = event.data.split(":");
+      turn += Number(delta) || 0;
+      fling = Number(speed) || 0;
+    } else if (event.data === "duo:play") {
       last = performance.now();
       stage.renderer.setAnimationLoop(render);
     }
